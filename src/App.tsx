@@ -2,18 +2,22 @@ import React, { createContext, useContext } from 'react';
 import './App.css';
 import { makeAutoObservable } from 'mobx';
 import { observer } from 'mobx-react-lite';
+import { v4 as uuidv4 } from 'uuid';
 
 /* MOBX */
 type Message = {
     message: string;
     timestamp: string;
+    userID: string;
 };
 class RootStore {
     _socket: WebSocket | undefined = undefined;
     _messages: Message[] = [];
+    _uuid: string;
 
     constructor() {
         makeAutoObservable(this);
+        this._uuid = uuidv4();
     }
 
     get messages() {
@@ -21,9 +25,7 @@ class RootStore {
     }
 
     pushMessage(x: Message) {
-        console.log(`** new message: ${x.message}**`);
         this._messages.push(x);
-        console.log(this.messages);
     }
 
     send(message: string) {
@@ -35,6 +37,7 @@ class RootStore {
         const x: Message = {
             message: message,
             timestamp: String(Date.now()),
+            userID: this._uuid,
         };
 
         this.pushMessage(x);
@@ -48,10 +51,11 @@ class RootStore {
         const socket = new WebSocket('ws://localhost:4000');
 
         // Connection opened
-        socket.addEventListener('open', function (_) {
+        socket.addEventListener('open', (_) => {
             const x: Message = {
                 message: 'Hello Server!',
                 timestamp: String(Date.now()),
+                userID: this._uuid,
             };
             socket.send(JSON.stringify(x));
         });
@@ -95,13 +99,14 @@ const App: React.FC = observer(() => {
             <SendDialog />
             <div>
                 <h1> Messages </h1>
+                <p>{store._uuid}</p>
                 {store.messages
                     .slice()
                     .reverse()
                     .map((x, i) => (
                         <div key={i} style={{ border: 'solid 1px gray', marginBottom: '1rem' }}>
-                            <p>{x.message}</p>
-                            <p>{x.timestamp}</p>
+                            <h2>{x.message}</h2>
+                            <p>{`${x.userID} | ${x.timestamp}`}</p>
                         </div>
                     ))}
             </div>
