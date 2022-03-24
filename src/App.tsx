@@ -4,9 +4,13 @@ import { makeAutoObservable } from 'mobx';
 import { observer } from 'mobx-react-lite';
 
 /* MOBX */
+type Message = {
+    message: string;
+    timestamp: string;
+};
 class RootStore {
     _socket: WebSocket | undefined = undefined;
-    _messages: string[] = [];
+    _messages: Message[] = [];
 
     constructor() {
         makeAutoObservable(this);
@@ -16,8 +20,8 @@ class RootStore {
         return this._messages;
     }
 
-    pushMessage(x: string) {
-        console.log(`** new message: ${x}**`);
+    pushMessage(x: Message) {
+        console.log(`** new message: ${x.message}**`);
         this._messages.push(x);
         console.log(this.messages);
     }
@@ -28,8 +32,13 @@ class RootStore {
             return undefined;
         }
 
-        this.pushMessage(message);
-        this._socket.send(message);
+        const x: Message = {
+            message: message,
+            timestamp: String(Date.now()),
+        };
+
+        this.pushMessage(x);
+        this._socket.send(JSON.stringify(x));
     }
 
     connect() {
@@ -40,13 +49,20 @@ class RootStore {
 
         // Connection opened
         socket.addEventListener('open', function (_) {
-            socket.send('Hello Server!');
+            const x: Message = {
+                message: 'Hello Server!',
+                timestamp: String(Date.now()),
+            };
+            socket.send(JSON.stringify(x));
         });
 
         // Listen for messages
         socket.addEventListener('message', (event) => {
-            console.log(`Message from server *${event.data}*`);
-            this.pushMessage(event.data);
+            const message = JSON.parse(event.data);
+
+            console.log(`Message from server *${message.message} | ${message.timestamp}*`);
+
+            this.pushMessage(message);
         });
 
         this._socket = socket;
@@ -83,7 +99,10 @@ const App: React.FC = observer(() => {
                     .slice()
                     .reverse()
                     .map((x, i) => (
-                        <p key={i}>{x}</p>
+                        <div key={i} style={{ border: 'solid 1px gray', marginBottom: '1rem' }}>
+                            <p>{x.message}</p>
+                            <p>{x.timestamp}</p>
+                        </div>
                     ))}
             </div>
         </RootStoreContext.Provider>
