@@ -96,6 +96,20 @@ class RootStore {
         socket.addEventListener('message', (event) => {
             const message = JSON.parse(event.data);
 
+            if (message.message == null) {
+                console.log('invalid message');
+                return undefined;
+            } else if (message.timestamp == null) {
+                console.log('invalid message');
+                return undefined;
+            } else if (message.userID == null) {
+                console.log('invalid message');
+                return undefined;
+            } else if (message.userName == null) {
+                console.log('invalid message');
+                return undefined;
+            }
+
             console.log(`Message from server *${message.message} | ${message.timestamp}*`);
 
             this.pushMessage(message);
@@ -110,29 +124,6 @@ class RootStore {
 /* APP */
 
 const RootStoreContext = createContext<RootStore>(new RootStore());
-
-const SendDialog: React.FC = observer(() => {
-    const store = useContext(RootStoreContext);
-    const [message, setMessage] = useState('');
-
-    const submit = () => {
-        store.send(message);
-        setMessage('');
-    };
-
-    return (
-        <div>
-            <h1>Send a message</h1>
-            <input
-                onChange={(e) => setMessage(e.target.value)}
-                value={message}
-                onKeyPress={(e) => e.key === 'Enter' && submit()}
-                placeholder="message"
-            ></input>
-            <button onClick={submit}>Send</button>
-        </div>
-    );
-});
 
 const LoginScreen: React.FC = observer(() => {
     const store = useContext(RootStoreContext);
@@ -156,6 +147,29 @@ const LoginScreen: React.FC = observer(() => {
     );
 });
 
+const SendDialog: React.FC = observer(() => {
+    const store = useContext(RootStoreContext);
+    const [message, setMessage] = useState('');
+
+    const submit = () => {
+        store.send(message);
+        setMessage('');
+    };
+
+    return (
+        <div className="sendDialog">
+            <input
+                className="sendDialogInput"
+                onChange={(e) => setMessage(e.target.value)}
+                value={message}
+                onKeyPress={(e) => e.key === 'Enter' && submit()}
+                placeholder="Message"
+            ></input>
+            <button onClick={submit}>Send</button>
+        </div>
+    );
+});
+
 const Chat: React.FC = observer(() => {
     const store = useContext(RootStoreContext);
     if (store.socket == null) {
@@ -163,23 +177,21 @@ const Chat: React.FC = observer(() => {
     }
 
     return (
-        <div>
+        <div className="chat">
             <SendDialog />
-            <div>
-                <h1> Messages </h1>
-                <p>{store._uuid}</p>
+            <div className="messages">
                 {store.messages
                     .slice()
                     .reverse()
-                    .map((x, i) => {
-                        console.log('xxx', typeof x.timestamp, x.timestamp);
-                        return (
-                            <div key={i} style={{ border: 'solid 1px gray', marginBottom: '1rem' }}>
-                                <h2>{x.message}</h2>
-                                <p>{`${x.userName} | ${new Date(parseInt(x.timestamp)).toLocaleTimeString()}`}</p>
+                    .map((x, i) => (
+                        <div key={i} className="messageCard">
+                            <div className="messageCardHeader">
+                                <div className="user">{x.userName}</div>
+                                <div className="timestamp">{new Date(parseInt(x.timestamp)).toLocaleTimeString()}</div>
                             </div>
-                        );
-                    })}
+                            <div className="messageBox">{x.message}</div>
+                        </div>
+                    ))}
             </div>
         </div>
     );
