@@ -5,6 +5,13 @@ import { observer } from 'mobx-react-lite';
 import { v4 as uuidv4 } from 'uuid';
 
 /* MOBX */
+
+export const handleCredentialResponse = (response: any) => {
+    console.log('Encoded JWT ID token -> ' + response.credential);
+};
+
+let CONNECTED = false;
+
 type Message = {
     message: string;
     timestamp: string;
@@ -33,6 +40,10 @@ class RootStore {
     // TODO why do I have to do this function signature?
     set userName(userName: string | undefined) {
         this._userName = userName;
+    }
+
+    set socket(socket: WebSocket | undefined) {
+        this._socket = socket;
     }
 
     get socket() {
@@ -65,7 +76,15 @@ class RootStore {
         this._socket.send(JSON.stringify(x));
     }
 
+    disconnect() {
+        this.socket = undefined;
+    }
+
     connect() {
+        if (CONNECTED) {
+            return undefined;
+        }
+
         if (this._userName == null) {
             console.log('refusing to connect without username');
             return undefined;
@@ -115,7 +134,20 @@ class RootStore {
             this.pushMessage(message);
         });
 
-        this._socket = socket;
+        // Listen for possible errors
+        socket.addEventListener('error', (event) => {
+            console.log('WebSocket error: ', event);
+            this.disconnect();
+        });
+
+        // deal with a closed connection
+        socket.addEventListener('close', (event) => {
+            console.log('WebSocket closed: ', event);
+            this.disconnect();
+        });
+
+        this.socket = socket;
+        CONNECTED = true;
 
         console.log('websocket end');
     }
@@ -136,13 +168,17 @@ const LoginScreen: React.FC = observer(() => {
 
     return (
         <div>
-            <input
-                onChange={(e) => setUserName(e.target.value)}
-                value={userName}
-                onKeyPress={(e) => e.key === 'Enter' && submit()}
-                placeholder="Username"
-            ></input>
-            <button onClick={submit}>Enter</button>
+            <div>
+                <input
+                    onChange={(e) => setUserName(e.target.value)}
+                    value={userName}
+                    onKeyPress={(e) => e.key === 'Enter' && submit()}
+                    placeholder="Username"
+                ></input>
+                <button onClick={submit}>Enter</button>
+            </div>
+            Fook
+            <div id="buttonDiv"></div>
         </div>
     );
 });
@@ -178,6 +214,7 @@ const Chat: React.FC = observer(() => {
 
     return (
         <div className="chat">
+            {store.socket == null ? 'disconnected' : 'connected'}
             <SendDialog />
             <div className="messages">
                 {store.messages

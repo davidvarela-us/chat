@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
+import App, { handleCredentialResponse } from './App';
 import reportWebVitals from './reportWebVitals';
 
 ReactDOM.render(
@@ -10,6 +10,18 @@ ReactDOM.render(
     </React.StrictMode>,
     document.getElementById('root'),
 );
+
+window.onload = function () {
+    window['google'].accounts.id.initialize({
+        client_id: '592851698614-1tl5j1l895ofj9ad9jofc2cm813bqamt.apps.googleusercontent.com',
+        callback: handleCredentialResponse,
+    });
+    window['google'].accounts.id.renderButton(
+        document.getElementById('buttonDiv'),
+        { theme: 'outline', size: 'large' }, // customization attributes
+    );
+    window['google'].accounts.id.prompt(); // also display the One Tap dialog
+};
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
