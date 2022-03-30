@@ -132,7 +132,7 @@ class RootStore {
         console.log('websocket start');
 
         // Create WebSocket connection.
-        const socket = new WebSocket('ws://ec2-54-176-38-82.us-west-1.compute.amazonaws.com:4000', [
+        const socket = new WebSocket('wss://ec2-54-176-38-82.us-west-1.compute.amazonaws.com:4000', [
             'access_token',
             token,
         ]);
