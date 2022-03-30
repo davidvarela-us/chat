@@ -29,7 +29,7 @@ class RootStore {
     _userName: string | undefined = 'David'; //TODO
     _profile: Profile | undefined = undefined;
     _token: string | undefined = undefined;
-    _READY: boolean = false;
+    _READY = false;
 
     constructor() {
         makeAutoObservable(this);
@@ -132,12 +132,15 @@ class RootStore {
         console.log('websocket start');
 
         // Create WebSocket connection.
-        const socket = new WebSocket('ws://ec2-54-176-38-82.us-west-1.compute.amazonaws.com:4000', ["access_token", token]);
-        console.log("attempting websocket connection");
+        const socket = new WebSocket('ws://ec2-54-176-38-82.us-west-1.compute.amazonaws.com:4000', [
+            'access_token',
+            token,
+        ]);
+        console.log('attempting websocket connection');
 
         // Connection opened
         socket.addEventListener('open', (_) => {
-            console.log("websocket connection established");
+            console.log('websocket connection established');
             this.READY = true;
         });
 
@@ -248,12 +251,12 @@ const SendDialog: React.FC = observer(() => {
 const Chat: React.FC = observer(() => {
     const store = useContext(RootStoreContext);
     if (store.socket == null || store.READY == false) {
-        return <p>no connection established</p>
+        return <p>no connection established</p>;
     }
 
     if (store.profile == null) {
         store.authenticate();
-        return <p>no profile</p>
+        return <p>no profile</p>;
     }
 
     return (
@@ -283,23 +286,6 @@ const store = new RootStore();
 
 export const handleCredentialResponse = (response: any) => {
     store.connect(response.credential);
-    /*
-    const responsePayload = jwt.decode(response.credential);
-    if (responsePayload == null) {
-        console.log("null payload");
-        return undefined;
-    }
-    if (typeof responsePayload === 'string' ) {
-        console.log("string payload", responsePayload);
-        return undefined;
-    }
-    console.log("ID: " + responsePayload.sub);
-    console.log('Full Name: ' + responsePayload.name);
-    console.log('Given Name: ' + responsePayload.given_name);
-    console.log('Family Name: ' + responsePayload.family_name);
-    console.log("Image URL: " + responsePayload.picture);
-    console.log("Email: " + responsePayload.email);
-    */
 };
 
 // TODO check username and that websocket connection is open before displaying chat?

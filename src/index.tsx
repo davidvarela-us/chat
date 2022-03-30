@@ -12,14 +12,17 @@ ReactDOM.render(
 );
 
 window.onload = function () {
+    /* @ts-expect-error workaround to access google lib*/
     window['google'].accounts.id.initialize({
         client_id: '592851698614-1tl5j1l895ofj9ad9jofc2cm813bqamt.apps.googleusercontent.com',
         callback: handleCredentialResponse,
     });
+    /* @ts-expect-error workaround to access google lib*/
     window['google'].accounts.id.renderButton(
         document.getElementById('buttonDiv'),
         { theme: 'outline', size: 'large' }, // customization attributes
     );
+    /* @ts-expect-error workaround to access google lib*/
     window['google'].accounts.id.prompt(); // also display the One Tap dialog
 };
 
