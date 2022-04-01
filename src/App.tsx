@@ -190,6 +190,10 @@ const RootStoreContext = createContext<RootStore>(new RootStore());
 const LoginScreen: React.FC = observer(() => {
     const store = useContext(RootStoreContext);
 
+    if (store.profile == null && store.socket != null && store.READY) {
+        store.authenticate();
+    }
+
     return (
         <div className="loginScreen">
             <Header />
