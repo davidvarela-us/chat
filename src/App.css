@@ -1,3 +1,16 @@
+.loginScreen {
+    display: grid;
+    grid-template-rows: min-content auto;
+    width: 100vw;
+    height: 100vh;
+}
+
+.loginScreenButtonBox {
+    display: grid;
+    align-items: center;
+    justify-items: center;
+}
+
 .chatUI {
     display: grid;
     grid-template-rows: min-content auto min-content;

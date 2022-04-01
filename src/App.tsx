@@ -27,7 +27,6 @@ class RootStore {
     _socket: WebSocket | undefined = undefined;
     _messages: Message[] = [];
     _uuid: string;
-    _userName: string | undefined = 'David'; //TODO
     _profile: Profile | undefined = undefined;
     _token: string | undefined = undefined;
     _READY = false;
@@ -54,15 +53,6 @@ class RootStore {
 
     get messages() {
         return this._messages;
-    }
-
-    get userName() {
-        return this._userName;
-    }
-
-    // TODO why do I have to do this function signature?
-    set userName(userName: string | undefined) {
-        this._userName = userName;
     }
 
     get profile() {
@@ -200,25 +190,12 @@ const RootStoreContext = createContext<RootStore>(new RootStore());
 const LoginScreen: React.FC = observer(() => {
     const store = useContext(RootStoreContext);
 
-    const [userName, setUserName] = useState('');
-    const submit = () => {
-        store.userName = userName;
-        setUserName('');
-    };
-
     return (
-        <div>
-            <div>
-                <input
-                    onChange={(e) => setUserName(e.target.value)}
-                    value={userName}
-                    onKeyPress={(e) => e.key === 'Enter' && submit()}
-                    placeholder="Username"
-                ></input>
-                <button onClick={submit}>Enter</button>
+        <div className="loginScreen">
+            <Header />
+            <div className="loginScreenButtonBox">
+                <div id="buttonDiv"></div>
             </div>
-            Fook
-            <div id="buttonDiv"></div>
         </div>
     );
 });
@@ -247,19 +224,12 @@ const SendDialog: React.FC = observer(() => {
 
 const Header: React.FC = observer(() => {
     const store = useContext(RootStoreContext);
-    if (store.socket == null || store.READY == false) {
-        return <p>no connection established! :(</p>;
-    }
-
-    if (store.profile == null) {
-        return <p>no profile</p>;
-    }
 
     return (
         <div className="header">
-            <div className="headerProfile">{store.profile == null ? 'no info' : `${store.profile.name}`}</div>
+            <div className="headerProfile">{store.profile == null ? '' : `${store.profile.name}`}</div>
             <div>Chatter</div>
-            <div className={store.socket == null ? 'redDot' : 'greenDot'} />
+            <div className={store.socket == null || store.READY == false ? 'redDot' : 'greenDot'} />
         </div>
     );
 });
@@ -320,7 +290,7 @@ export const handleCredentialResponse = (response: any) => {
 const App: React.FC = observer(() => {
     return (
         <RootStoreContext.Provider value={store}>
-            {store.userName == null ? <LoginScreen /> : <ChatUI />}
+            {store.profile == null ? <LoginScreen /> : <ChatUI />}
         </RootStoreContext.Provider>
     );
 });
