@@ -1,3 +1,12 @@
+/*
+#1F1F26
+#303E8C
+*/
+
+.body {
+    font-family: "Open Sans";
+}
+
 .loginScreen {
     display: grid;
     grid-template-rows: min-content auto;
@@ -12,39 +21,103 @@
 }
 
 .chatUI {
-    display: grid;
-    grid-template-rows: min-content auto min-content;
     width: 100vw;
     height: 100vh;
+    display: grid;
+    grid-template-rows: min-content auto min-content;
+    grid-template-columns: 1fr 4fr;
+    grid-template-areas:
+    "sidebar header"
+    "sidebar chat"
+    "sidebar sendDialog";
+}
+
+.sidebar {
+    grid-area: sidebar;
+    background-color: #333259;
+    color: white;
+    font-family: "Open Sans";
+}
+
+.sidebarHeader {
+    padding: 0.5rem;
+}
+
+.sidebarHeaderBranding {
+    font-family: "Hind";
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin: 0;
+    padding: 0;
+}
+
+.sidebarHeaderStatus {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-family: "Hind";
+    font-weight: 300;
+    font-size: 1rem;
+}
+
+.sidebarHeading {
+    padding: 1rem 0.5rem;
+}
+
+.channelList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.channelItem {
+    width: 100%;
+    color: inherit;
+    background: none;
+    border: none;
+}
+
+.channelItem:hover {
+    font-weight: 600;
+}
+
+.selected {
+    background-color: #303E8C;
 }
 
 .chat {
+    font-family: 'Open Sans';
+    grid-area: chat;
+    overflow-y: scroll;
     display: flex;
     flex-direction: column-reverse;
     gap: 1rem;
     padding: 1rem;
-    font-family: 'Open Sans';
-    overflow-y: scroll;
 }
 
 .header {
-    /*
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    */
-    background-color: #333259;
+    grid-area: header;
+    background-color: #302F40;
     color: white;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     justify-items: center;
     align-items: center;
-    padding: 0 1rem;
+    padding: 0.5rem 1rem;
 }
 
-.headerProfile {
+.headerChannel {
     justify-self: start;
+    font-family: "Hind";
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.headerMenu {
+    justify-self: end;
 }
 
 .redDot {
@@ -63,6 +136,7 @@
     background-color: green;
     border-radius: 50%;
     margin: 0.5rem;
+    margin-left: 0rem;
     border: solid 1px black;
     justify-self: end;
 }
@@ -74,6 +148,7 @@
     left: 0;
     width: 100vw;
     */
+    grid-area: sendDialog;
     display: flex;
     background-color: #eeeeee;
     padding: 1rem;

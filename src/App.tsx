@@ -231,9 +231,8 @@ const Header: React.FC = observer(() => {
 
     return (
         <div className="header">
-            <div className="headerProfile">{store.profile == null ? '' : `${store.profile.name}`}</div>
-            <div>Chatter</div>
-            <div className={store.socket == null || store.READY == false ? 'redDot' : 'greenDot'} />
+            <div className="headerChannel"># main</div>
+            <div className="headerMenu">⏷</div>
         </div>
     );
 });
@@ -241,10 +240,50 @@ const Header: React.FC = observer(() => {
 const ChatUI: React.FC = observer(() => {
     return (
         <div className="chatUI">
+            <Sidebar />
             <Header />
             <Chat />
             <SendDialog />
         </div>
+    );
+});
+
+const Sidebar: React.FC = observer(() => {
+    return (
+        <div className="sidebar">
+            <SidebarHeader />
+            <div className="sidebarHeading">Channels</div>
+            <ul className="channelList">
+                <ChannelItem>main</ChannelItem>
+                <ChannelItem>tech</ChannelItem>
+                <ChannelItem>social events</ChannelItem>
+                <ChannelItem>random</ChannelItem>
+            </ul>
+        </div>
+    );
+});
+
+const SidebarHeader: React.FC = observer(() => {
+    const store = useContext(RootStoreContext);
+
+    return (
+        <div className="sidebarHeader">
+            <div className="sidebarHeaderBranding">Chatter</div>
+            <div className="sidebarHeaderStatus">
+                <div className={store.socket == null || store.READY == false ? 'redDot' : 'greenDot'} />
+                <div className="headerProfile">{store.profile == null ? '' : `${store.profile.name}`}</div>
+            </div>
+        </div>
+    );
+});
+
+const ChannelItem: React.FC = observer(({ children }) => {
+    const className = children == 'main' ? 'channelItem selected' : 'channelItem';
+
+    return (
+        <button className={className}>
+            <li>{`# ${children}`}</li>
+        </button>
     );
 });
 
