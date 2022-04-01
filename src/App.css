@@ -1,19 +1,87 @@
+.chatUI {
+    display: grid;
+    grid-template-rows: min-content auto min-content;
+    width: 100vw;
+    height: 100vh;
+}
+
 .chat {
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
+    gap: 1rem;
+    padding: 1rem;
+    font-family: 'Open Sans';
+    overflow-y: scroll;
+}
+
+.header {
+    /*
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    */
+    background-color: #333259;
+    color: white;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    justify-items: center;
+    align-items: center;
+    padding: 0 1rem;
+}
+
+.headerProfile {
+    justify-self: start;
+}
+
+.redDot {
+    height: 0.5rem;
+    width: 0.5rem;
+    background-color: red;
+    border-radius: 50%;
+    margin: 0.5rem;
+    border: solid 1px black;
+    justify-self: end;
+}
+
+.greenDot {
+    height: 0.5rem;
+    width: 0.5rem;
+    background-color: green;
+    border-radius: 50%;
+    margin: 0.5rem;
+    border: solid 1px black;
+    justify-self: end;
 }
 
 .sendDialog {
+    /*
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    */
     display: flex;
+    background-color: #eeeeee;
     padding: 1rem;
+    border-top: solid 1px #e0e0e0;
 }
 
 .sendDialogInput {
     flex-grow: 1;
+    border: 0 outset black;
+    background-color: #eeeeee;
+}
+.sendDialogInput:focus {
+    outline: none;
+}
+
+.sendDialogButton {
+    border: 1px outset black;
+    background-color: white;
 }
 
 .messages {
-    padding: 1rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -21,29 +89,45 @@
 
 .messageCard {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 1rem;
-    padding: 1rem;
+    align-items: center;
+}
+
+.messageCardUserImage {
+    max-height: 2.5rem;
+    height: auto;
+    display: block;
+    object-fit: cover;
     border-radius: 0.5rem;
-    background-color: #eeeeff;
+}
+
+.messageCardContent {
+    display: flex;
+    flex-direction: column;
 }
 
 .messageCardHeader {
     width: 100%;
     display: flex;
-    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
 }
 
 .user {
     font-size: 1rem;
-    font-weight: bold;
+    font-family: 'Hind';
+    font-weight: 600;
 }
 
 .timestamp {
-    font-size: 1rem;
+    font-size: 0.8rem;
+    font-family: 'Hind';
+    font-weight: 300;
     color: gray;
 }
 
 .messageBox {
     font-size: 1rem;
 }
+

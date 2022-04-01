@@ -10,18 +10,19 @@ import { info } from 'console';
 
 let CONNECTED = false;
 
-type Message = {
-    message: string;
-    timestamp: string;
-    userID: string;
-    userName: string;
-};
-
 type Profile = {
     name: string;
     email: string;
     picture: string;
 };
+
+type Message = {
+    message: string;
+    timestamp: string;
+    userID: string;
+    profile: Profile;
+};
+
 class RootStore {
     _socket: WebSocket | undefined = undefined;
     _messages: Message[] = [];
@@ -111,7 +112,7 @@ class RootStore {
             message: message,
             timestamp: String(Date.now()),
             userID: this._uuid,
-            userName: this._profile.email,
+            profile: this._profile,
         };
 
         this.pushMessage(x);
@@ -132,11 +133,8 @@ class RootStore {
         console.log('websocket start');
 
         // Create WebSocket connection.
-        const socket = new WebSocket('wss://ec2-54-176-38-82.us-west-1.compute.amazonaws.com:4000', [
-            'access_token',
-            token,
-        ]);
-        console.log('attempting websocket connection');
+        const socket = new WebSocket('wss://chat.davidvarela.us', ['access_token', token]);
+        console.log('attempting websocket connection foo');
 
         // Connection opened
         socket.addEventListener('open', (_) => {
@@ -168,7 +166,7 @@ class RootStore {
             } else if (message.userID == null) {
                 console.log('invalid message');
                 return undefined;
-            } else if (message.userName == null) {
+            } else if (message.profile == null) {
                 console.log('invalid message');
                 return undefined;
             }
@@ -243,7 +241,35 @@ const SendDialog: React.FC = observer(() => {
                 onKeyPress={(e) => e.key === 'Enter' && submit()}
                 placeholder="Message"
             ></input>
-            <button onClick={submit}>Send</button>
+        </div>
+    );
+});
+
+const Header: React.FC = observer(() => {
+    const store = useContext(RootStoreContext);
+    if (store.socket == null || store.READY == false) {
+        return <p>no connection established! :(</p>;
+    }
+
+    if (store.profile == null) {
+        return <p>no profile</p>;
+    }
+
+    return (
+        <div className="header">
+            <div className="headerProfile">{store.profile == null ? 'no info' : `${store.profile.name}`}</div>
+            <div>Chatter</div>
+            <div className={store.socket == null ? 'redDot' : 'greenDot'} />
+        </div>
+    );
+});
+
+const ChatUI: React.FC = observer(() => {
+    return (
+        <div className="chatUI">
+            <Header />
+            <Chat />
+            <SendDialog />
         </div>
     );
 });
@@ -251,7 +277,7 @@ const SendDialog: React.FC = observer(() => {
 const Chat: React.FC = observer(() => {
     const store = useContext(RootStoreContext);
     if (store.socket == null || store.READY == false) {
-        return <p>no connection established</p>;
+        return <p>no connection established! :(</p>;
     }
 
     if (store.profile == null) {
@@ -261,22 +287,24 @@ const Chat: React.FC = observer(() => {
 
     return (
         <div className="chat">
-            {store.profile == null ? 'no info' : `${store.profile.name}`}
-            {store.socket == null ? 'disconnected' : 'connected'}
-            <SendDialog />
             <div className="messages">
-                {store.messages
-                    .slice()
-                    .reverse()
-                    .map((x, i) => (
-                        <div key={i} className="messageCard">
+                {store.messages.map((x, i) => (
+                    <div key={i} className="messageCard">
+                        <img src={x.profile.picture} className="messageCardUserImage"></img>
+                        <div className="messageCardContent">
                             <div className="messageCardHeader">
-                                <div className="user">{x.userName}</div>
-                                <div className="timestamp">{new Date(parseInt(x.timestamp)).toLocaleTimeString()}</div>
+                                <div className="user">{x.profile.name}</div>
+                                <div className="timestamp">
+                                    {new Date(parseInt(x.timestamp)).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    })}
+                                </div>
                             </div>
                             <div className="messageBox">{x.message}</div>
                         </div>
-                    ))}
+                    </div>
+                ))}
             </div>
         </div>
     );
@@ -292,7 +320,7 @@ export const handleCredentialResponse = (response: any) => {
 const App: React.FC = observer(() => {
     return (
         <RootStoreContext.Provider value={store}>
-            {store.userName == null ? <LoginScreen /> : <Chat />}
+            {store.userName == null ? <LoginScreen /> : <ChatUI />}
         </RootStoreContext.Provider>
     );
 });
