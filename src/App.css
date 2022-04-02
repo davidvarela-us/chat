@@ -8,16 +8,47 @@
 }
 
 .loginScreen {
-    display: grid;
-    grid-template-rows: min-content auto;
     width: 100vw;
     height: 100vh;
+    display: grid;
+    grid-template-rows: 7fr 3fr;
+}
+
+.loginScreenWelcome {
+    display: grid;
+    align-items: center;
+    justify-items: center;
+    color: white;
+    background-color: #333259;
+}
+
+.loginScreenWelcomeText {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-items: center;
+    font-family: "Hind";
+    font-size: 3rem;
+    font-weight: 300;
+}
+
+.loginScreenBranding {
+    font-weight: 600;
+    display: inline-block;
+}
+
+.loginScreenTagline {
+    font-family: "Open Sans";
+    font-weight: 300;
+    font-size: 1.5rem;
 }
 
 .loginScreenButtonBox {
     display: grid;
     align-items: center;
     justify-items: center;
+    color: white;
+    background-color: #302F40;
 }
 
 .chatUI {
@@ -65,19 +96,18 @@
 }
 
 .channelList {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+    box-sizing: border-box;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    width: 100%;
+    padding-left: 0.5rem;
 }
 
 .channelItem {
-    width: 100%;
     color: inherit;
     background: none;
     border: none;
+    text-align: left;
 }
 
 .channelItem:hover {

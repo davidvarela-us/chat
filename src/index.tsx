@@ -20,7 +20,7 @@ window.onload = function () {
     /* @ts-expect-error workaround to access google lib*/
     window['google'].accounts.id.renderButton(
         document.getElementById('buttonDiv'),
-        { theme: 'outline', size: 'large' }, // customization attributes
+        { theme: 'filled_black', size: 'large' }, // customization attributes
     );
     /* @ts-expect-error workaround to access google lib*/
     window['google'].accounts.id.prompt(); // also display the One Tap dialog

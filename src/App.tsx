@@ -1,14 +1,14 @@
-import React, { createContext, Profiler, useContext, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import './App.css';
 import { makeAutoObservable } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import { v4 as uuidv4 } from 'uuid';
-import jwt from 'jsonwebtoken';
-import { info } from 'console';
+/* import jwt from 'jsonwebtoken'; */
 
 /* MOBX */
 
 let CONNECTED = false;
+const CHANNELS = ['main', 'tech', 'social', 'support', 'random'];
 
 type Profile = {
     name: string;
@@ -17,10 +17,12 @@ type Profile = {
 };
 
 type Message = {
+    messageID: string;
     message: string;
     timestamp: string;
     userID: string;
     profile: Profile;
+    channel: string;
 };
 
 class RootStore {
@@ -30,6 +32,7 @@ class RootStore {
     _profile: Profile | undefined = undefined;
     _token: string | undefined = undefined;
     _READY = false;
+    _channel = 'main';
 
     constructor() {
         makeAutoObservable(this);
@@ -71,6 +74,14 @@ class RootStore {
         return this._socket;
     }
 
+    get channel() {
+        return this._channel;
+    }
+
+    set channel(channel: string) {
+        this._channel = channel;
+    }
+
     pushMessage(x: Message) {
         this._messages.push(x);
     }
@@ -99,12 +110,15 @@ class RootStore {
         }
 
         const x: Message = {
+            messageID: uuidv4(),
             message: message,
             timestamp: String(Date.now()),
             userID: this._uuid,
             profile: this._profile,
+            channel: this._channel,
         };
 
+        console.log('sending: ', x);
         this.pushMessage(x);
         this._socket.send(JSON.stringify(x));
     }
@@ -147,7 +161,10 @@ class RootStore {
                 return undefined;
             }
 
-            if (message.message == null) {
+            if (message.messageID == null) {
+                console.log('invalid message');
+                return undefined;
+            } else if (message.message == null) {
                 console.log('invalid message');
                 return undefined;
             } else if (message.timestamp == null) {
@@ -159,9 +176,12 @@ class RootStore {
             } else if (message.profile == null) {
                 console.log('invalid message');
                 return undefined;
+            } else if (message.channel == null) {
+                console.log('invalid message');
+                return undefined;
             }
 
-            console.log(`Message from server *${message.message} | ${message.timestamp}*`);
+            console.log(`Message from server *${message.messageID} | ${message.message}*`);
 
             this.pushMessage(message);
         });
@@ -196,7 +216,14 @@ const LoginScreen: React.FC = observer(() => {
 
     return (
         <div className="loginScreen">
-            <Header />
+            <div className="loginScreenWelcome">
+                <div className="loginScreenWelcomeText">
+                    <div>
+                        Welcome to <span className="loginScreenBranding">Chatter</span>
+                    </div>
+                    <div className="loginScreenTagline">real-time messaging</div>
+                </div>
+            </div>
             <div className="loginScreenButtonBox">
                 <div id="buttonDiv"></div>
             </div>
@@ -231,7 +258,7 @@ const Header: React.FC = observer(() => {
 
     return (
         <div className="header">
-            <div className="headerChannel"># main</div>
+            <div className="headerChannel">{`# ${store.channel}`}</div>
             <div className="headerMenu">⏷</div>
         </div>
     );
@@ -253,12 +280,11 @@ const Sidebar: React.FC = observer(() => {
         <div className="sidebar">
             <SidebarHeader />
             <div className="sidebarHeading">Channels</div>
-            <ul className="channelList">
-                <ChannelItem>main</ChannelItem>
-                <ChannelItem>tech</ChannelItem>
-                <ChannelItem>social events</ChannelItem>
-                <ChannelItem>random</ChannelItem>
-            </ul>
+            <div className="channelList">
+                {CHANNELS.map((channel, i) => (
+                    <ChannelItem key={i} channel={channel} />
+                ))}
+            </div>
         </div>
     );
 });
@@ -277,12 +303,18 @@ const SidebarHeader: React.FC = observer(() => {
     );
 });
 
-const ChannelItem: React.FC = observer(({ children }) => {
-    const className = children == 'main' ? 'channelItem selected' : 'channelItem';
+type ChannelItemProps = {
+    channel: string;
+};
+
+const ChannelItem: React.FC<ChannelItemProps> = observer(({ channel }) => {
+    const store = useContext(RootStoreContext);
+
+    const className = channel == store.channel ? 'channelItem selected' : 'channelItem';
 
     return (
-        <button className={className}>
-            <li>{`# ${children}`}</li>
+        <button className={className} onClick={() => (store.channel = channel)}>
+            {`# ${channel}`}
         </button>
     );
 });
@@ -301,23 +333,27 @@ const Chat: React.FC = observer(() => {
     return (
         <div className="chat">
             <div className="messages">
-                {store.messages.map((x, i) => (
-                    <div key={i} className="messageCard">
-                        <img src={x.profile.picture} className="messageCardUserImage"></img>
-                        <div className="messageCardContent">
-                            <div className="messageCardHeader">
-                                <div className="user">{x.profile.name}</div>
-                                <div className="timestamp">
-                                    {new Date(parseInt(x.timestamp)).toLocaleTimeString('en-US', {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                    })}
+                {store.messages
+                    .filter((message) => {
+                        return message.channel == store.channel;
+                    })
+                    .map((x) => (
+                        <div key={x.messageID} className="messageCard">
+                            <img src={x.profile.picture} className="messageCardUserImage"></img>
+                            <div className="messageCardContent">
+                                <div className="messageCardHeader">
+                                    <div className="user">{x.profile.name}</div>
+                                    <div className="timestamp">
+                                        {new Date(parseInt(x.timestamp)).toLocaleTimeString('en-US', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
+                                    </div>
                                 </div>
+                                <div className="messageBox">{x.message}</div>
                             </div>
-                            <div className="messageBox">{x.message}</div>
                         </div>
-                    </div>
-                ))}
+                    ))}
             </div>
         </div>
     );
@@ -326,6 +362,7 @@ const Chat: React.FC = observer(() => {
 const store = new RootStore();
 
 export const handleCredentialResponse = (response: any) => {
+    console.log('about to connect');
     store.connect(response.credential);
 };
 
