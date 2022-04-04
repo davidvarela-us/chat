@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 /* MOBX */
 
-let CONNECTED = false;
+const SERVER_URL = 'wss://chat.davidvarela.us';
 const CHANNELS = ['main', 'tech', 'social', 'support', 'random'];
 
 type Profile = {
@@ -15,6 +15,10 @@ type Profile = {
     email: string;
     picture: string;
 };
+
+function isProfile(x: any): x is Profile {
+    return x.name != null && x.email != null && x.picture != null;
+}
 
 type Message = {
     messageID: string;
@@ -25,18 +29,43 @@ type Message = {
     channel: string;
 };
 
-class RootStore {
-    _socket: WebSocket | undefined = undefined;
-    _messages: Message[] = [];
-    _uuid: string;
-    _profile: Profile | undefined = undefined;
-    _token: string | undefined = undefined;
-    _READY = false;
-    _channel = 'main';
+function isMessage(x: any): x is Message {
+    return (
+        x.messageID != null &&
+        x.message != null &&
+        x.timestamp != null &&
+        x.userID != null &&
+        isProfile(x.profile) &&
+        x.channel != null
+    );
+}
 
-    constructor() {
+interface WebSocketMessage<T> {
+    type: string;
+    id: string;
+    payload: T;
+}
+
+function isWebSocketMessage(x: any): x is WebSocketMessage<any> {
+    return x.type != null && x.id != null && x.payload != null;
+}
+
+interface messageConf<T> {
+    type: string;
+    checker: (x: T) => boolean;
+    handler: (x: T) => undefined;
+}
+
+class WebSocketStore {
+    _url: string;
+    _socket: WebSocket | undefined = undefined;
+    _token: string | undefined = undefined;
+    _OPEN = false;
+    _CONNECTED = false;
+
+    constructor(url: string) {
         makeAutoObservable(this);
-        this._uuid = uuidv4();
+        this._url = url;
     }
 
     get token() {
@@ -46,12 +75,128 @@ class RootStore {
         this._token = token;
     }
 
-    get READY() {
-        return this._READY;
+    set socket(socket: WebSocket | undefined) {
+        this._socket = socket;
     }
 
-    set READY(ready: boolean) {
-        this._READY = ready;
+    get socket() {
+        return this._socket;
+    }
+
+    get OPEN() {
+        return this._OPEN;
+    }
+
+    set OPEN(open: boolean) {
+        this._OPEN = open;
+    }
+
+    get isReady() {
+        return this._socket != null && this.OPEN;
+    }
+
+    authenticate() {
+        this.send('auth', { token: this.token });
+    }
+
+    disconnect() {
+        this.socket = undefined;
+    }
+
+    send(dataType: string, payload: any) {
+        if (!this.isReady) {
+            console.log('[ws] cant send message with unconnected socket');
+            return undefined;
+        }
+
+        const message = {
+            id: uuidv4(),
+            type: dataType,
+            payload: payload,
+        };
+
+        //TODO should not need this extra guard
+        if (this._socket != null) {
+            console.log(`[ws] sent message: ${message.type} ${message.id}`);
+            this._socket.send(JSON.stringify(message));
+        }
+    }
+
+    connect<A, B>(token: string, configuration: (messageConf<A> | messageConf<B>)[]) {
+        if (this._CONNECTED) {
+            console.log('[ws] already connected');
+            return undefined;
+        }
+
+        this._token = token;
+
+        // Create WebSocket connection.
+        this._socket = new WebSocket(this._url, ['access_token', this._token]);
+        console.log('[ws] attempting websocket connection:', this._url);
+
+        // Listen for messages
+        this._socket.addEventListener('message', (event) => {
+            const message = JSON.parse(event.data);
+            if (!isWebSocketMessage(message)) {
+                console.log('malformed message: ', message);
+                return undefined;
+            }
+
+            console.log(`[ws] received message: ${message.type} ${message.id}`);
+            configuration.forEach((conf) => {
+                if (conf.type == message.type) {
+                    if (!conf.checker(message.payload)) {
+                        console.log(`[ws] invalid ${conf.type}: `, message.payload);
+                        return undefined;
+                    }
+                    conf.handler(message.payload);
+                    return undefined;
+                }
+            });
+
+            return undefined;
+        });
+
+        // Connection opened
+        this._socket.addEventListener('open', (_) => {
+            this.OPEN = true;
+
+            console.log('[ws] websocket connection established');
+            return undefined;
+        });
+
+        // Listen for possible errors
+        this._socket.addEventListener('error', (event) => {
+            console.log('[ws] connection error: ', event);
+            this.disconnect();
+
+            return undefined;
+        });
+
+        // deal with a closed connection
+        this._socket.addEventListener('close', (event) => {
+            console.log('[ws] connection closed: ', event);
+            this.disconnect();
+
+            return undefined;
+        });
+
+        this._CONNECTED = true;
+        return undefined;
+    }
+}
+
+class RootStore {
+    _messages: Message[] = [];
+    _uuid: string;
+    _profile: Profile | undefined = undefined;
+    _channel = 'main';
+    ws: WebSocketStore;
+
+    constructor(url: string) {
+        makeAutoObservable(this);
+        this.ws = new WebSocketStore(url);
+        this._uuid = uuidv4();
     }
 
     get messages() {
@@ -66,14 +211,6 @@ class RootStore {
         this._profile = profile;
     }
 
-    set socket(socket: WebSocket | undefined) {
-        this._socket = socket;
-    }
-
-    get socket() {
-        return this._socket;
-    }
-
     get channel() {
         return this._channel;
     }
@@ -84,28 +221,12 @@ class RootStore {
 
     pushMessage(x: Message) {
         this._messages.push(x);
-    }
-
-    authenticate() {
-        if (this._socket == null) {
-            console.log('* cant send message with unconnected socket');
-            return undefined;
-        }
-        const x = {
-            token: this.token,
-        };
-
-        this._socket.send(JSON.stringify(x));
+        return undefined;
     }
 
     send(message: string) {
-        if (this._socket == null) {
-            console.log('* cant send message with unconnected socket');
-            return undefined;
-        }
-
         if (this._profile == null) {
-            console.log('* refusing to connect without profile');
+            console.log('refusing to send without profile');
             return undefined;
         }
 
@@ -118,100 +239,47 @@ class RootStore {
             channel: this._channel,
         };
 
-        console.log('sending: ', x);
         this.pushMessage(x);
-        this._socket.send(JSON.stringify(x));
-    }
+        this.ws.send('message', x);
 
-    disconnect() {
-        this.socket = undefined;
+        return undefined;
     }
 
     connect(token: string) {
-        this.token = token;
-
-        if (CONNECTED) {
-            return undefined;
-        }
-
-        console.log('websocket start');
-
-        // Create WebSocket connection.
-        const socket = new WebSocket('wss://chat.davidvarela.us', ['access_token', token]);
-        console.log('attempting websocket connection foo');
-
-        // Connection opened
-        socket.addEventListener('open', (_) => {
-            console.log('websocket connection established');
-            this.READY = true;
-        });
-
-        // Listen for messages
-        socket.addEventListener('message', (event) => {
-            const message = JSON.parse(event.data);
-
-            if (message.control == 'profile') {
-                console.log('PROFILE');
-                this.profile = {
-                    name: message.name,
-                    email: message.email,
-                    picture: message.picture,
-                };
-                console.log('setting profile: ', this.profile);
+        const conf1: messageConf<Profile> = {
+            type: 'profile',
+            checker: isProfile,
+            handler: (profile: Profile) => {
+                console.log('setting profile: ', profile);
+                this.profile = profile;
                 return undefined;
-            }
+            },
+        };
 
-            if (message.messageID == null) {
-                console.log('invalid message');
+        const conf2: messageConf<Message> = {
+            type: 'message',
+            checker: isMessage,
+            handler: (message: Message) => {
+                this.pushMessage(message);
                 return undefined;
-            } else if (message.message == null) {
-                console.log('invalid message');
-                return undefined;
-            } else if (message.timestamp == null) {
-                console.log('invalid message');
-                return undefined;
-            } else if (message.userID == null) {
-                console.log('invalid message');
-                return undefined;
-            } else if (message.profile == null) {
-                console.log('invalid message');
-                return undefined;
-            } else if (message.channel == null) {
-                console.log('invalid message');
-                return undefined;
-            }
+            },
+        };
 
-            console.log(`Message from server *${message.messageID} | ${message.message}*`);
+        const conf = [conf1, conf2];
 
-            this.pushMessage(message);
-        });
-
-        // Listen for possible errors
-        socket.addEventListener('error', (event) => {
-            console.log('WebSocket error: ', event);
-            this.disconnect();
-        });
-
-        // deal with a closed connection
-        socket.addEventListener('close', (event) => {
-            console.log('WebSocket closed: ', event);
-            this.disconnect();
-        });
-
-        this.socket = socket;
-        CONNECTED = true;
+        this.ws.connect<Profile, Message>(token, conf);
     }
 }
 
 /* APP */
 
-const RootStoreContext = createContext<RootStore>(new RootStore());
+const RootStoreContext = createContext<RootStore>(new RootStore(SERVER_URL));
 
 const LoginScreen: React.FC = observer(() => {
     const store = useContext(RootStoreContext);
 
-    if (store.profile == null && store.socket != null && store.READY) {
-        store.authenticate();
+    if (store.profile == null && store.ws.isReady) {
+        store.ws.authenticate();
     }
 
     return (
@@ -296,7 +364,7 @@ const SidebarHeader: React.FC = observer(() => {
         <div className="sidebarHeader">
             <div className="sidebarHeaderBranding">Chatter</div>
             <div className="sidebarHeaderStatus">
-                <div className={store.socket == null || store.READY == false ? 'redDot' : 'greenDot'} />
+                <div className={store.ws.isReady ? 'greenDot' : 'redDot'} />
                 <div className="headerProfile">{store.profile == null ? '' : `${store.profile.name}`}</div>
             </div>
         </div>
@@ -321,13 +389,8 @@ const ChannelItem: React.FC<ChannelItemProps> = observer(({ channel }) => {
 
 const Chat: React.FC = observer(() => {
     const store = useContext(RootStoreContext);
-    if (store.socket == null || store.READY == false) {
+    if (!store.ws.isReady) {
         return <p>no connection established! :(</p>;
-    }
-
-    if (store.profile == null) {
-        store.authenticate();
-        return <p>no profile</p>;
     }
 
     return (
@@ -339,7 +402,11 @@ const Chat: React.FC = observer(() => {
                     })
                     .map((x) => (
                         <div key={x.messageID} className="messageCard">
-                            <img src={x.profile.picture} className="messageCardUserImage"></img>
+                            <img
+                                src={x.profile.picture}
+                                referrerPolicy="no-referrer"
+                                className="messageCardUserImage"
+                            ></img>
                             <div className="messageCardContent">
                                 <div className="messageCardHeader">
                                     <div className="user">{x.profile.name}</div>
@@ -359,10 +426,9 @@ const Chat: React.FC = observer(() => {
     );
 });
 
-const store = new RootStore();
+const store = new RootStore(SERVER_URL);
 
 export const handleCredentialResponse = (response: any) => {
-    console.log('about to connect');
     store.connect(response.credential);
 };
 
