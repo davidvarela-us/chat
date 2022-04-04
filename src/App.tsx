@@ -387,11 +387,9 @@ const ChannelItem: React.FC<ChannelItemProps> = observer(({ channel }) => {
     );
 });
 
+//TODO disable message send until socket is ready
 const Chat: React.FC = observer(() => {
     const store = useContext(RootStoreContext);
-    if (!store.ws.isReady) {
-        return <p>no connection established! :(</p>;
-    }
 
     return (
         <div className="chat">
@@ -428,11 +426,8 @@ const Chat: React.FC = observer(() => {
 
 const store = new RootStore(SERVER_URL);
 
-export const handleCredentialResponse = (response: any) => {
-    store.connect(response.credential);
-};
+export const handleCredentialResponse = (response: any) => store.connect(response.credential);
 
-// TODO check username and that websocket connection is open before displaying chat?
 const App: React.FC = observer(() => {
     return (
         <RootStoreContext.Provider value={store}>
