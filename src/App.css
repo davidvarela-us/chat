@@ -12,6 +12,21 @@
     height: 100vh;
     display: grid;
     grid-template-rows: 7fr 3fr;
+    background-image: linear-gradient(
+        175deg,
+        hsl(231deg 49% 37%) 0%,
+        hsl(233deg 45% 35%) 1%,
+        hsl(235deg 41% 33%) 6%,
+        hsl(236deg 38% 32%) 21%,
+        hsl(238deg 34% 30%) 48%,
+        hsl(241deg 30% 28%) 69%,
+        hsl(242deg 27% 27%) 82%,
+        hsl(242deg 24% 26%) 90%,
+        hsl(242deg 22% 25%) 95%,
+        hsl(243deg 20% 24%) 98%,
+        hsl(243deg 17% 23%) 100%,
+        hsl(244deg 15% 22%) 100%
+    );
 }
 
 .loginScreenWelcome {
@@ -19,7 +34,6 @@
     align-items: center;
     justify-items: center;
     color: white;
-    background-color: #333259;
 }
 
 .loginScreenWelcomeText {
@@ -48,7 +62,6 @@
     align-items: center;
     justify-items: center;
     color: white;
-    background-color: #302F40;
 }
 
 .chatUI {
