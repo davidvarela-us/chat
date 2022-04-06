@@ -3,12 +3,19 @@ import './App.css';
 import { makeAutoObservable } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import { v4 as uuidv4 } from 'uuid';
+import { MdLocalFireDepartment, MdMessage, MdLock, MdGrid3X3 } from 'react-icons/md';
+import { VscAccount, VscMenu, VscTriangleDown } from 'react-icons/vsc';
 /* import jwt from 'jsonwebtoken'; */
 
 /* MOBX */
 
 const SERVER_URL = 'wss://chat.davidvarela.us';
-const CHANNELS = ['main', 'tech', 'social', 'support', 'random'];
+const CHANNELS = new Map();
+CHANNELS.set('main', { name: 'main', description: 'Welcome! This is the default channel.' });
+CHANNELS.set('tech', { name: 'tech', description: 'All things tech.' });
+CHANNELS.set('social', { name: 'social', description: 'Social media and events.' });
+CHANNELS.set('support', { name: 'support', description: 'Ask away. We are here to help :)' });
+CHANNELS.set('random', { name: 'random', description: 'Anything goes.' });
 
 type Profile = {
     name: string;
@@ -284,12 +291,52 @@ const LoginScreen: React.FC = observer(() => {
 
     return (
         <div className="loginScreen">
+            <div className="loginHeader">
+                <div className="loginHeaderContent">
+                    <div className="loginHeaderBranding">Chatter</div>
+                    <div className="loginHeaderMenu">
+                        <a href="/" className="loginHeaderButton">
+                            <div>Features</div>
+                        </a>
+                        <a href="/" className="loginHeaderButton">
+                            <div>About</div>
+                        </a>
+                        <a href="/" className="loginHeaderButton">
+                            <div>Contact</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
             <div className="loginScreenWelcome">
                 <div className="loginScreenWelcomeText">
                     <div>
                         Welcome to <span className="loginScreenBranding">Chatter</span>
                     </div>
-                    <div className="loginScreenTagline">real-time messaging</div>
+                    <div className="loginScreenTagline">the future of communication</div>
+                </div>
+            </div>
+            <div>
+                <div className="features">
+                    <div className="featureDisplayIcon">
+                        <MdLocalFireDepartment />
+                    </div>
+                    <div className="featureDisplayIcon">
+                        <MdGrid3X3 />
+                    </div>
+                    <div className="featureDisplayIcon">
+                        <MdMessage />
+                    </div>
+                    <div className="featureDisplayIcon">
+                        <MdLock />
+                    </div>
+                    <div className="featureDisplayTitle">Real-time Messaging</div>
+                    <div className="featureDisplayTitle">Chat Rooms</div>
+                    <div className="featureDisplayTitle">Direct Messaging</div>
+                    <div className="featureDisplayTitle">Secure Authentication</div>
+                    <div className="featureDisplayDescription">See messages instantly with WebSocket technology.</div>
+                    <div className="featureDisplayDescription">Organize discussion into different channels.</div>
+                    <div className="featureDisplayDescription">Message other people directly.</div>
+                    <div className="featureDisplayDescription">Profiles are secured with Google log-in.</div>
                 </div>
             </div>
             <div className="loginScreenButtonBox">
@@ -311,6 +358,7 @@ const SendDialog: React.FC = observer(() => {
     return (
         <div className="sendDialog">
             <input
+                autoFocus
                 className="sendDialogInput"
                 onChange={(e) => setMessage(e.target.value)}
                 value={message}
@@ -326,8 +374,13 @@ const Header: React.FC = observer(() => {
 
     return (
         <div className="header">
-            <div className="headerChannel">{`# ${store.channel}`}</div>
-            <div className="headerMenu">⏷</div>
+            <div className="headerText">
+                <div className="headerChannel">{`#${store.channel}`}</div>
+                <div className="headerChannelDescription">{CHANNELS.get(store.channel).description}</div>
+            </div>
+            <div className="headerMenu">
+                <VscMenu />
+            </div>
         </div>
     );
 });
@@ -336,9 +389,33 @@ const ChatUI: React.FC = observer(() => {
     return (
         <div className="chatUI">
             <Sidebar />
-            <Header />
-            <Chat />
-            <SendDialog />
+            <div className="chatBox">
+                <Header />
+                <Chat />
+                <SendDialog />
+            </div>
+        </div>
+    );
+});
+
+const SidebarHeading: React.FC = observer(({ children }) => {
+    return (
+        <div className="sidebarHeading">
+            <div>{children}</div>
+            <div className="sidebar-menu">
+                <VscTriangleDown></VscTriangleDown>
+            </div>
+        </div>
+    );
+});
+
+const SidebarItem: React.FC = observer(({ children }) => {
+    return (
+        <div className="sidebar-item">
+            <div>{children}</div>
+            <div>
+                <VscAccount />
+            </div>
         </div>
     );
 });
@@ -347,11 +424,21 @@ const Sidebar: React.FC = observer(() => {
     return (
         <div className="sidebar">
             <SidebarHeader />
-            <div className="sidebarHeading">Channels</div>
-            <div className="channelList">
-                {CHANNELS.map((channel, i) => (
-                    <ChannelItem key={i} channel={channel} />
-                ))}
+            <div className="sidebar-section">
+                <SidebarHeading>Channels</SidebarHeading>
+                <div className="sidebar-list">
+                    {Array.from(CHANNELS, ([name, channel]) => (
+                        <ChannelItem key={name} channel={channel.name} />
+                    ))}
+                </div>
+            </div>
+            <div className="sidebar-section">
+                <SidebarHeading>Direct Message</SidebarHeading>
+                <div className="sidebar-list">
+                    <SidebarItem>Alice Almond</SidebarItem>
+                    <SidebarItem>Bob Bishop</SidebarItem>
+                    <SidebarItem>Carlos Cortez</SidebarItem>
+                </div>
             </div>
         </div>
     );
@@ -361,11 +448,13 @@ const SidebarHeader: React.FC = observer(() => {
     const store = useContext(RootStoreContext);
 
     return (
-        <div className="sidebarHeader">
+        <div className="sidebar-header">
             <div className="sidebarHeaderBranding">Chatter</div>
             <div className="sidebarHeaderStatus">
-                <div className={store.ws.isReady ? 'greenDot' : 'redDot'} />
                 <div className="headerProfile">{store.profile == null ? '' : `${store.profile.name}`}</div>
+                <div className={store.ws.isReady ? 'greenDot' : 'redDot'}>
+                    <VscAccount />
+                </div>
             </div>
         </div>
     );
